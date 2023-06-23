@@ -6,11 +6,14 @@ local NORMALTYPIST = "DiagnosticVirtualTextHint"
 local ERRORTYPIST = "DiagnosticVirtualTextError"
 local PASSTYPIST = "DiagnosticVirtualTextOk"
 
+local paddingLine = 1
+
 local win_conf = {
 	relative = "win",
 	title = "Typist",
 	title_pos = "center",
 	border = "double",
+	style = "minimal",
 	row = 0,
 	col = 0,
 	width = 80,
@@ -27,14 +30,20 @@ end
 local function set_keymap()
 	vim.keymap.set("i", "<CR>", function()
 		local pos = api.nvim_win_get_cursor(win)
-		return pos[1] < api.nvim_buf_line_count(buf) and string.rep("<Down>", 2)
+		if pos[1] < api.nvim_buf_line_count(buf) then
+			return string.rep("<Down>", 1 + paddingLine)
+		end
+		-- return pos[1] < api.nvim_buf_line_count(buf) and string.rep("<Down>", 2)
 	end, { buffer = buf, expr = true })
 
+	-- FIX: 回到上一行直接回到行首了
 	vim.keymap.set("i", "<Backspace>", function()
 		local pos = api.nvim_win_get_cursor(win)
 
 		if pos[2] == 0 then
-			return pos[1] > 2 and string.rep("<Up>", 2)
+			if pos[1] > 2 then
+				return string.rep("<Up>", 1 + paddingLine)
+			end
 		else
 			return "<Backspace>"
 		end
@@ -118,7 +127,7 @@ local function init(filepath)
 
 	-- set space lines
 	local spaces = {}
-	for _ = 1, #contents * 2 + 1 do
+	for _ = 1, #contents * (paddingLine + 1) - (paddingLine - 1) do
 		table.insert(spaces, "")
 	end
 	api.nvim_buf_set_lines(buf, 0, -1, false, spaces)
@@ -130,7 +139,7 @@ local function init(filepath)
 			virt_lines = { { line } },
 			virt_lines_above = true,
 		})
-		inc = inc + 1
+		inc = inc + paddingLine
 	end
 
 	open_win()
