@@ -22,7 +22,10 @@ local win_conf = {
 
 local buf, win, ns
 
+local startTime, endTime
+
 local function open_win()
+	startTime = os.time()
 	win = api.nvim_open_win(buf, true, win_conf)
 	vim.cmd("startinsert!")
 end
@@ -47,10 +50,48 @@ local function set_highlight()
 	api.nvim_win_set_hl_ns(win, ns)
 end
 
+local function close_win()
+	endTime = os.time()
+	api.nvim_win_close(win, true)
+	api.nvim_buf_delete(buf, { force = true })
+end
+
+local function settle()
+	local res = {}
+	for i = 0, 25 do
+		res[string.char(65 + i)] = { passed = 0, error = 0, count = 0 }
+		res[string.char(97 + i)] = { passed = 0, error = 0, count = 0 }
+	end
+
+	local marks = api.nvim_buf_get_extmarks(buf, ns, 0, -1, { details = true })
+	for _, mark in ipairs(marks) do
+		for _, char in ipairs(mark[4].virt_lines[1]) do
+			local byte = string.byte(char[1])
+			if (byte >= 65 and byte <= 90) or (byte >= 97 and byte <= 122) then
+				if char[2] == PASSTYPIST then
+					res[char[1]].passed = res[char[1]].passed + 1
+				else
+					res[char[1]].error = res[char[1]].error + 1
+				end
+				res[char[1]].count = res[char[1]].count + 1
+			end
+		end
+	end
+
+	local report = {}
+
+	for key, item in pairs(res) do
+		if item.count > 0 then
+			report[key] = item.passed / item.count
+		end
+	end
+
+	return report
+end
+
 local function set_keymap()
 	vim.keymap.set("i", "<CR>", function() end, { buffer = buf, expr = true })
 
-	-- FIX: 回到上一行直接回到行首了
 	vim.keymap.set("i", "<Backspace>", function()
 		local pos = api.nvim_win_get_cursor(win)
 
@@ -66,8 +107,7 @@ local function set_keymap()
 	vim.keymap.set("i", "<Esc>", "", { buffer = buf })
 
 	vim.keymap.set("i", "<C-q>", function()
-		api.nvim_win_close(win, true)
-		api.nvim_buf_delete(buf, { force = true })
+		close_win()
 	end, { buffer = buf })
 
 	vim.keymap.set("i", "<C-h>", function()
@@ -116,6 +156,14 @@ local function updateExtmark()
 		sign_text = "",
 	})
 	if #content >= #marktxt then
+		if pos[1] >= api.nvim_buf_line_count(buf) then
+			local res = { rate = settle() }
+			close_win()
+			res.time = endTime - startTime
+
+			vim.notify(vim.inspect(res))
+			return
+		end
 		api.nvim_win_set_cursor(win, { pos[1] + 1 + paddingLine, 0 })
 	end
 end
