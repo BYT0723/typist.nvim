@@ -29,12 +29,12 @@ end
 
 local function set_highlight()
 	api.nvim_set_hl(ns, NORMALTYPIST, {
-		fg = "#aaaaaa",
+		fg = "#888888",
 		bg = "#330033",
 	})
 
 	api.nvim_set_hl(ns, PASSTYPIST, {
-		fg = "#338833",
+		fg = "#00ff00",
 		bg = "#330033",
 	})
 
@@ -45,6 +45,7 @@ local function set_highlight()
 	})
 
 	api.nvim_win_set_hl_ns(win, ns)
+end
 
 local function set_keymap()
 	vim.keymap.set("i", "<CR>", function() end, { buffer = buf, expr = true })
@@ -87,10 +88,6 @@ local function updateExtmark()
 
 	local mark = api.nvim_buf_get_extmarks(buf, ns, { row, 0 }, { row + 1, 0 }, { details = true })[1]
 
-	-- if mark == nil then
-	-- 	return
-	-- end
-
 	local marktxt = ""
 	for _, item in ipairs(mark[4].virt_lines[1]) do
 		marktxt = marktxt .. item[1]
@@ -116,7 +113,7 @@ local function updateExtmark()
 	api.nvim_buf_set_extmark(buf, ns, row, 0, {
 		virt_lines = { line },
 		virt_lines_above = true,
-		sign_text = "",
+		sign_text = "",
 	})
 	if #content >= #marktxt then
 		api.nvim_win_set_cursor(win, { pos[1] + 1 + paddingLine, 0 })
@@ -133,13 +130,14 @@ local function set_autocmd()
 end
 
 local function init(filepath)
+	-- Initialize buf and namespace
+	buf = api.nvim_create_buf(true, true)
+	ns = api.nvim_create_namespace(UNIQUENAME)
+
 	local contents = {}
 	for line in io.lines(filepath) do
 		table.insert(contents, { line, NORMALTYPIST })
 	end
-
-	buf = api.nvim_create_buf(true, false)
-	ns = api.nvim_create_namespace(UNIQUENAME)
 
 	-- set space lines
 	local spaces = {}
