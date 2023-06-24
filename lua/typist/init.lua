@@ -47,21 +47,15 @@ local function set_highlight()
 	api.nvim_win_set_hl_ns(win, ns)
 
 local function set_keymap()
-	vim.keymap.set("i", "<CR>", function()
-		local pos = api.nvim_win_get_cursor(win)
-		if pos[1] < api.nvim_buf_line_count(buf) then
-			return string.rep("<Down>", 1 + paddingLine)
-		end
-		-- return pos[1] < api.nvim_buf_line_count(buf) and string.rep("<Down>", 2)
-	end, { buffer = buf, expr = true })
+	vim.keymap.set("i", "<CR>", function() end, { buffer = buf, expr = true })
 
 	-- FIX: 回到上一行直接回到行首了
 	vim.keymap.set("i", "<Backspace>", function()
 		local pos = api.nvim_win_get_cursor(win)
 
 		if pos[2] == 0 then
-			if pos[1] > 2 then
-				return string.rep("<Up>", 1 + paddingLine)
+			if pos[1] > 1 + paddingLine then
+				return string.rep("<Up>", 1 + paddingLine) .. "<End><Backspace>"
 			end
 		else
 			return "<Backspace>"
@@ -124,6 +118,9 @@ local function updateExtmark()
 		virt_lines_above = true,
 		sign_text = "",
 	})
+	if #content >= #marktxt then
+		api.nvim_win_set_cursor(win, { pos[1] + 1 + paddingLine, 0 })
+	end
 end
 
 local function set_autocmd()
