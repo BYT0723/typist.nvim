@@ -2,9 +2,9 @@ local api = vim.api
 
 local UNIQUENAME = "TYPIST"
 
-local NORMALTYPIST = "DiagnosticVirtualTextHint"
-local ERRORTYPIST = "DiagnosticVirtualTextError"
-local PASSTYPIST = "DiagnosticVirtualTextOk"
+local NORMALTYPIST = "TypistTextNormal"
+local PASSTYPIST = "TypistTextPass"
+local ERRORTYPIST = "TypistTextError"
 
 local paddingLine = 1
 
@@ -26,6 +26,25 @@ local function open_win()
 	win = api.nvim_open_win(buf, true, win_conf)
 	vim.cmd("startinsert!")
 end
+
+local function set_highlight()
+	api.nvim_set_hl(ns, NORMALTYPIST, {
+		fg = "#aaaaaa",
+		bg = "#330033",
+	})
+
+	api.nvim_set_hl(ns, PASSTYPIST, {
+		fg = "#338833",
+		bg = "#330033",
+	})
+
+	api.nvim_set_hl(ns, ERRORTYPIST, {
+		fg = "#330033",
+		bg = "#ff0000",
+		bold = true,
+	})
+
+	api.nvim_win_set_hl_ns(win, ns)
 
 local function set_keymap()
 	vim.keymap.set("i", "<CR>", function()
@@ -148,6 +167,7 @@ end
 
 local function main()
 	init("/home/walter/Workspace/Github/Neovim/typist.nvim/lua/text.txt")
+	set_highlight()
 	set_keymap()
 	set_autocmd()
 end
