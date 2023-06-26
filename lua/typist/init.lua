@@ -1,5 +1,6 @@
 local M = {}
 
+local utf8 = require("utf8")
 local config = require("typist.config")
 local api = vim.api
 
@@ -137,26 +138,39 @@ local function set_autocmd()
 
 			local row = pos[1] - 1
 
+			-- current line text
 			local content = api.nvim_get_current_line()
 
-			local mark = api.nvim_buf_get_extmarks(buf, ns, { row, 0 }, { row + 1, 0 }, { details = true })[1]
-
+			-- current line extmark text
 			local marktxt = ""
+			local mark = api.nvim_buf_get_extmarks(buf, ns, { row, 0 }, { row + 1, 0 }, { details = true })[1]
 			for _, item in ipairs(mark[4].virt_lines[1]) do
 				marktxt = marktxt .. item[1]
 			end
 
+			-- utf8 chars in extmark text
+			local markChars = {}
+			-- utf8 chars in content text
+			local contentChars = {}
+
+			for char in string.gmatch(marktxt, utf8.charpattern) do
+				table.insert(markChars, char)
+			end
+			for char in string.gmatch(content, utf8.charpattern) do
+				table.insert(contentChars, char)
+			end
+
 			local line = {}
-			for i = 1, #marktxt do
-				if i > #content then
-					table.insert(line, { string.sub(marktxt, i), NORMALTYPIST })
+			for i = 1, #markChars do
+				if i > #contentChars then
+					table.insert(line, { table.concat(markChars, "", i), NORMALTYPIST })
 					break
 				end
-				local char = string.sub(marktxt, i, i)
-				if char == string.sub(content, i, i) then
-					table.insert(line, { char, PASSTYPIST })
+
+				if markChars[i] == contentChars[i] then
+					table.insert(line, { markChars[i], PASSTYPIST })
 				else
-					table.insert(line, { char, ERRORTYPIST })
+					table.insert(line, { markChars[i], ERRORTYPIST })
 				end
 			end
 
@@ -168,7 +182,7 @@ local function set_autocmd()
 				virt_lines_above = true,
 				sign_text = "",
 			})
-			if #content >= #marktxt then
+			if #contentChars >= #markChars then
 				if pos[1] >= api.nvim_buf_line_count(buf) then
 					local res = { rate = settle() }
 					close_win()
