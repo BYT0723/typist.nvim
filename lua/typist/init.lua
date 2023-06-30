@@ -1,6 +1,5 @@
 local M = {}
 
-local utf8 = require("utf8")
 local config = require("typist.config")
 local api = vim.api
 
@@ -9,6 +8,8 @@ local UNIQUENAME = "TYPIST"
 local NORMALTYPIST = "TypistTextNormal"
 local PASSTYPIST = "TypistTextPass"
 local ERRORTYPIST = "TypistTextError"
+
+local utf8_charpattern = "[%z\x01-\x7F\xC2-\xF4][\x80-\xBF]*"
 
 local conf, buf, ns, win
 
@@ -153,10 +154,10 @@ local function set_autocmd()
 			-- utf8 chars in content text
 			local contentChars = {}
 
-			for char in string.gmatch(marktxt, utf8.charpattern) do
+			for char in string.gmatch(marktxt, utf8_charpattern) do
 				table.insert(markChars, char)
 			end
-			for char in string.gmatch(content, utf8.charpattern) do
+			for char in string.gmatch(content, utf8_charpattern) do
 				table.insert(contentChars, char)
 			end
 

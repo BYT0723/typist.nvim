@@ -10,9 +10,6 @@
 {
     'BYT0723/typist.nvim',
     opts = {},          -- default config
-    dependencies = {
-      'uga-rosa/utf8.nvim',
-    }
 }
 ```
 
