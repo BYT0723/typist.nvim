@@ -80,7 +80,7 @@ local function settle()
 
 	for key, item in pairs(res) do
 		if item.count > 0 then
-			report[key] = item.passed / item.count
+			report[key] = string.format("[%.0f%%](%d/%d)", (item.passed / item.count) * 100, item.passed, item.count)
 		end
 	end
 
@@ -223,10 +223,9 @@ local function set_autocmd()
 			if #contentChars >= #markChars then
 				if pos[1] >= api.nvim_buf_line_count(buf) then
 					local res = { rate = settle() }
-					close_win()
-					res.time = os.time() - startTime
-
+					res.time = os.time() - startTime .. " second"
 					vim.notify(vim.inspect(res))
+					close_win()
 					return
 				end
 				api.nvim_win_set_cursor(win, { pos[1] + 1 + conf.paddingLine, 0 })
