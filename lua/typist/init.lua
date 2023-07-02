@@ -3,30 +3,45 @@ local M = {}
 local config = require("typist.config")
 local api = vim.api
 
+-- unique name for namespace,augroup,etc...
 local UNIQUENAME = "TYPIST"
 
-local NORMALTYPIST = "TypistTextNormal"
-local PASSTYPIST = "TypistTextPass"
-local ERRORTYPIST = "TypistTextError"
+-- highlight
+local NORMALTYPIST = "TypistTextNormal" -- normal
+local PASSTYPIST = "TypistTextPass" -- pass
+local ERRORTYPIST = "TypistTextError" -- error
 
+-- Used to match utf8 characters
 local utf8_charpattern = "[%z\x01-\x7F\xC2-\xF4][\x80-\xBF]*"
 
 local conf, buf, ns, win
 
 local startTime
 
+---
+--- open the window
+---
 local function open_win()
+	-- open window by buf
 	win = api.nvim_open_win(buf, true, conf.win)
+	-- set highlight
 	api.nvim_win_set_hl_ns(win, ns)
+	-- enter insert mode
 	vim.cmd("startinsert!")
 end
 
+---
+--- close the window
+---
+---@param opt  nil | { bufclose:boolean }
 local function close_win(opt)
 	opt = opt or { bufclose = true }
 	if opt.bufclose then
+		-- if close window with close buf
 		api.nvim_win_close(win, true)
 		api.nvim_buf_delete(buf, { force = true })
 	else
+		-- else just hide window
 		api.nvim_win_hide(win)
 	end
 
@@ -35,6 +50,10 @@ local function close_win(opt)
 	end
 end
 
+---
+--- statistical results
+---
+---@return {}
 local function settle()
 	local res = {}
 	for i = 0, 25 do
@@ -68,18 +87,26 @@ local function settle()
 	return report
 end
 
+---
+--- Initialize buf and namespace through a text file
+---
+---@param filepath string
 local function Init(filepath)
 	-- Initialize buf and namespace
 	buf = api.nvim_create_buf(true, false)
 	ns = api.nvim_create_namespace(UNIQUENAME)
 
+	-- record startup time
 	startTime = os.time()
 
+	-- read file and assemble extmark
 	local contents = {}
 	for line in io.lines(filepath) do
 		table.insert(contents, { line, NORMALTYPIST })
 	end
 
+	-- Fill space characters into buf
+	-- Prevent error reporting when setting extmarks
 	local spaces = {}
 	for _ = 1, #contents * (conf.paddingLine + 1) - (conf.paddingLine - 1) do
 		table.insert(spaces, "")
@@ -87,7 +114,7 @@ local function Init(filepath)
 	api.nvim_buf_set_lines(buf, 0, -1, false, spaces)
 
 	-- set extmark
-	local inc = 0
+	local inc = 0 -- increment, to help calculate line padding
 	for i, line in ipairs(contents) do
 		api.nvim_buf_set_extmark(buf, ns, i + inc, 0, {
 			virt_lines = { { line } },
@@ -96,21 +123,28 @@ local function Init(filepath)
 		inc = inc + conf.paddingLine
 	end
 
+	-- After buf initialization is complete, open the window
 	open_win()
+	-- Reposition the cursor
 	api.nvim_win_set_cursor(win, { 2, 0 })
 end
 
+---
+--- set command
+---
 local function set_command()
 	local cmd = api.nvim_create_user_command
 	cmd("TypistOpen", function()
 		M.TypistOpen()
-	end, {})
+	end, { desc = "Open Typist Window" })
 	cmd("TypistShow", function()
 		M.TypistShow()
-	end, {})
+	end, { desc = "Redisplay Typist Window" })
 end
 
--- set space lines
+---
+--- set highlight
+---
 local function set_highlight()
 	api.nvim_set_hl(ns, NORMALTYPIST, {
 		fg = "#888888",
@@ -129,6 +163,9 @@ local function set_highlight()
 	})
 end
 
+---
+--- set auto command
+---
 local function set_autocmd()
 	local gid = api.nvim_create_augroup(UNIQUENAME, { clear = true })
 	api.nvim_create_autocmd({ "TextChangedI" }, {
@@ -198,37 +235,53 @@ local function set_autocmd()
 	})
 end
 
+---
+--- Set keymap
+---
 local function set_keymap()
-	vim.keymap.set("i", "<CR>", function() end, { buffer = buf, expr = true })
+	-- disable <CR> and <Esc> in buf
+	vim.keymap.set("i", "<CR>", "", { buffer = buf, expr = true })
+	vim.keymap.set("i", "<Esc>", "", { buffer = buf })
 
+	-- Backspace
 	vim.keymap.set("i", "<Backspace>", function()
 		local pos = api.nvim_win_get_cursor(win)
 
+		-- If the cursor is in the first column and not in the first row
+		-- the cursor moves to the next row of the previous extmark
 		if pos[2] == 0 then
 			if pos[1] > 1 + conf.paddingLine then
 				return string.rep("<Up>", 1 + conf.paddingLine) .. "<End><Backspace>"
 			end
 		else
+			-- else just Backspace
 			return "<Backspace>"
 		end
 	end, { buffer = buf, expr = true })
 
-	vim.keymap.set("i", "<Esc>", "", { buffer = buf })
-
+	-- quit window
 	vim.keymap.set("i", "<C-q>", function()
 		close_win()
 	end, { buffer = buf })
 
+	-- hide window
 	vim.keymap.set("i", "<C-h>", function()
 		close_win({ bufclose = false })
 	end, { buffer = buf })
 end
 
+---
+--- Setup
+---
+---@param opts {}
 function M.setup(opts)
 	conf = config.setup(opts)
 	set_command()
 end
 
+---
+--- Command `TypistOpen` function
+---
 function M.TypistOpen()
 	Init("/home/walter/Workspace/Github/Neovim/typist.nvim/lua/text.txt")
 	set_highlight()
@@ -236,6 +289,9 @@ function M.TypistOpen()
 	set_autocmd()
 end
 
+---
+--- Command `TypistShow` function
+---
 function M.TypistShow()
 	if not buf then
 		vim.notify("No exist Typist buffer")
