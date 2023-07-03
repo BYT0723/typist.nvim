@@ -36,10 +36,10 @@
 		title_pos = "center",
 		border = "double",
 		style = "minimal",
-		row = 10.1,
-		col = 10.1,
-		width = 100,
-		height = 30,
+        row = 0.5, -- float, meaning 50%, and so on
+		col = 0.5,
+		width = 0.4,
+		height = 0.6,
 	},
 }
 ```
