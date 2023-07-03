@@ -10,8 +10,8 @@ local DEFAULT_OPTS = {
 		style = "minimal",
 		row = 0.5,
 		col = 0.5,
-		width = 0.7,
-		height = 0.5,
+		width = 0.4,
+		height = 0.6,
 	},
 }
 

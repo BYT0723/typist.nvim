@@ -1,6 +1,7 @@
 local M = {}
 
 local config = require("typist.config")
+local util = require("typist.util")
 local api = vim.api
 
 -- unique name for namespace,augroup,etc...
@@ -282,7 +283,10 @@ end
 --- Command `TypistOpen` function
 ---
 function M.TypistOpen()
-	Init("/home/walter/Workspace/Github/Neovim/typist.nvim/lua/text.txt")
+	local scriptPath = debug.getinfo(1, "S").source:sub(2)
+	local dir = scriptPath:sub(1, string.len(scriptPath) - string.len("lua/typist/init.lua")) .. "article/"
+
+	Init(dir .. util.GetRandomFile(dir))
 	set_highlight()
 	set_keymap()
 	set_autocmd()
